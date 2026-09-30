@@ -594,7 +594,7 @@
 			anchor = { x: rect.left, y: rect.top };
 		}
 		syncPin();
-		if (sessionStorage.getItem(OPEN_KEY) === '1') {
+		if (sessionStorage.getItem(OPEN_KEY) !== '0') {
 			dock.classList.add('open');
 			fab.setAttribute('aria-expanded', 'true');
 		}

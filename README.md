@@ -29,7 +29,7 @@ One iteration is one style. The seed is `1024 * (iteration + 1) + 7`. It draws t
 
 The `v0-live` cycler in [fire17/entangled-grail](https://github.com/fire17/entangled-grail) is replaced by the panel below.
 
-**Floating button.** It starts as a 36px button at opacity 0.28, and rises to 0.92 on hover. Drag it. The open panel drags too. Closing leaves the button where it was. In the right or bottom half of the screen, the panel grows up and to the left from that button.
+**Floating button.** The panel starts open. Closing it leaves a 36px button at opacity 0.28, which rises to 0.92 on hover. Drag either one. Closing leaves the button where it was. In the right or bottom half of the screen, the panel grows up and to the left from that button.
 
 **Four fields.**
 
