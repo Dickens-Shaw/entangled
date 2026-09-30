@@ -3,6 +3,7 @@
 // The bundle reads quality once: particle count is 1.5e6 scaled from 0.2 to 1.
 (function () {
 	const SHARED_KEY = 'entangled-shared';
+	const COLOR_KEY = 'entangled-colors';
 	// Ethereum style id → Tezos URL number. Same Fisher-Yates as the bundle.
 	const SHUFFLE = [1,179,25,83,57,21,124,46,80,231,34,91,43,24,242,221,130,81,176,161,129,86,122,64,175,131,144,38,164,209,196,58,184,55,47,9,145,202,151,76,32,73,100,159,17,253,107,93,95,169,207,37,216,103,116,136,7,96,139,29,33,191,226,189,138,50,236,250,23,71,4,214,181,222,200,133,53,14,180,13,192,183,5,108,52,224,150,210,84,182,142,20,172,113,69,12,74,62,141,212,27,157,15,167,92,54,123,220,87,232,60,109,206,229,118,140,240,215,104,99,174,45,16,166,245,185,115,137,188,247,234,148,6,147,41,98,39,18,199,235,223,246,162,82,101,187,97,168,177,154,105,243,119,171,112,248,217,173,228,10,51,205,3,102,170,66,238,63,85,193,160,19,197,94,22,35,256,106,111,195,219,114,194,132,239,233,252,72,120,11,249,149,254,40,56,158,251,30,213,134,88,153,225,61,198,125,230,227,152,48,190,8,44,241,31,117,68,126,208,204,59,79,135,90,42,201,121,128,2,155,110,211,203,163,28,156,70,127,89,36,218,165,65,75,146,143,186,255,244,237,78,26,67,49,77,178];
 	const FROM_TEZOS = new Array(257);
@@ -145,11 +146,15 @@
 
 	const paletteMats = [];
 	let colorOverride = null;
+	let colorSlots = ['colors0'];
 	const Orig = THREE.ShaderMaterial;
-	function paint (material, hexes) {
-		hexes.forEach((hex, i) => {
-			const color = material.uniforms.colors0.value[i];
-			if (color) color.setHex(parseInt(hex, 16));
+	function paint (material, hexes, slots) {
+		(slots || colorSlots).forEach((key) => {
+			const list = material.uniforms[key] && material.uniforms[key].value;
+			if (!list) return;
+			hexes.forEach((hex, i) => {
+				if (list[i]) list[i].setHex(parseInt(hex, 16));
+			});
 		});
 	}
 	THREE.ShaderMaterial = class extends Orig {
@@ -178,11 +183,42 @@
 		if (!hexes || !swatches.length) return;
 		swatches.forEach((input, i) => { input.value = '#' + hexes[i]; });
 	}
-	function writeColors (hexes) {
+	function writeColors (hexes, slots) {
+		if (slots) colorSlots = slots;
 		const query = readQuery();
 		query.set('colors', hexes.join(','));
 		history.replaceState(null, '', location.pathname + '?' + query.toString());
 		applyColors(hexes);
+	}
+	function publishColors (hexes) {
+		localStorage.setItem(COLOR_KEY, JSON.stringify({ colors: hexes, nonce: Date.now() }));
+	}
+	function restoreColors () {
+		const query = readQuery();
+		query.delete('colors');
+		history.replaceState(null, '', location.pathname + '?' + query.toString());
+		colorOverride = null;
+		colorSlots = ['colors0'];
+		const hexes = fileHexes();
+		const other = palettes && palettes[resolved - 1] ? palettes[resolved - 1][chainIdx === 0 ? 1 : 0].map(hex6) : null;
+		paletteMats.forEach((material) => {
+			if (hexes) paint(material, hexes, ['colors0']);
+			if (other) paint(material, other, ['colors1']);
+		});
+		if (hexes && hexes[0]) document.body.style.background = '#' + hexes[0];
+		showFileColors();
+	}
+	function adoptColors (rec) {
+		if (!rec) return;
+		if (rec.restore) {
+			restoreColors();
+			return;
+		}
+		if (!Array.isArray(rec.colors) || rec.colors.length !== 3) return;
+		if (!rec.colors.every((hex) => /^[0-9a-f]{6}$/i.test(hex))) return;
+		const hexes = rec.colors.map((hex) => hex.toLowerCase());
+		swatches.forEach((input, i) => { input.value = '#' + hexes[i]; });
+		writeColors(hexes, ['colors0', 'colors1']);
 	}
 	const savedColors = (initial.get('colors') || '').split(',');
 	if (savedColors.length === 3 && savedColors.every((hex) => /^[0-9a-fA-F]{6}$/.test(hex))) {
@@ -223,7 +259,16 @@
 	const style = document.createElement('style');
 	style.textContent = [
 		'#entangled-fps{position:fixed;top:10px;left:12px;z-index:9999;color:#d6ff4a;font:12px/1 "SF Mono",ui-monospace,monospace;letter-spacing:.08em;text-shadow:0 1px 2px #000;pointer-events:none}',
-		'#entangled-dock{position:fixed;left:12px;bottom:12px;z-index:9999;width:248px;padding:8px 10px;color:#e7e2d4;font-family:"DIN Alternate","Avenir Next Condensed",Futura,"Trebuchet MS",sans-serif;font-size:12px;letter-spacing:.12em;text-transform:uppercase;user-select:none;background:rgba(6,8,6,.78);border:1px solid rgba(198,214,170,.28);box-shadow:0 8px 24px rgba(0,0,0,.35)}',
+		'#entangled-dock{position:fixed;left:12px;bottom:12px;z-index:9999;width:36px;font-family:"DIN Alternate","Avenir Next Condensed",Futura,"Trebuchet MS",sans-serif;font-size:12px;letter-spacing:.12em;text-transform:uppercase;user-select:none}',
+		'#entangled-dock.open{width:248px}',
+		'#entangled-dock .fab{display:flex;align-items:center;justify-content:center;width:36px;height:36px;padding:0;border:1px solid rgba(214,255,74,.55);background:rgba(6,8,6,.4);color:#d6ff4a;opacity:.28;cursor:grab;box-shadow:none}',
+		'#entangled-dock .fab:hover{opacity:.92}',
+		'#entangled-dock .fab:active{cursor:grabbing}',
+		'#entangled-dock.open .fab{display:none}',
+		'#entangled-dock .panel{display:none}',
+		'#entangled-dock.open .panel{display:block;padding:8px 10px;color:#e7e2d4;background:rgba(6,8,6,.78);border:1px solid rgba(198,214,170,.28);box-shadow:0 8px 24px rgba(0,0,0,.35)}',
+		'#entangled-dock .grip{display:flex;align-items:center;justify-content:space-between;height:16px;margin:0 0 4px;cursor:grab;color:rgba(214,255,74,.55)}',
+		'#entangled-dock .grip:active{cursor:grabbing}',
 		'#entangled-dock .row{display:grid;grid-template-columns:52px 1fr;gap:8px;align-items:center;min-height:24px}',
 		'#entangled-dock .k{color:#8d9a78}',
 		'#entangled-dock .v{display:flex;align-items:center;gap:4px;min-width:0}',
@@ -232,7 +277,8 @@
 		'#entangled-dock button.on{color:#d6ff4a}',
 		'#entangled-dock button.icon{display:inline-flex;align-items:center;padding:2px;color:rgba(231,226,212,.72)}',
 		'#entangled-dock button.icon:hover{color:#d6ff4a}',
-		'#entangled-dock .num{width:2.6em;padding:0;border:0;background:transparent;color:#e7e2d4;font:13px "SF Mono",ui-monospace,monospace;letter-spacing:0;text-align:center;text-transform:none}',
+		'#entangled-dock .num{width:2.8em;height:18px;padding:0 2px;border:1px solid rgba(231,226,212,.5);background:rgba(0,0,0,.35);color:#e7e2d4;font:13px "SF Mono",ui-monospace,monospace;letter-spacing:0;text-align:center;text-transform:none}',
+		'#entangled-dock .num:focus{outline:none;border-color:#d6ff4a;color:#fff}',
 		'#entangled-dock .num::-webkit-inner-spin-button,#entangled-dock .num::-webkit-outer-spin-button{-webkit-appearance:none;margin:0}',
 		'#entangled-dock input[type=color]{-webkit-appearance:none;appearance:none;width:14px;height:14px;padding:0;border:1px solid rgba(231,226,212,.55);background:none;cursor:pointer}',
 		'#entangled-dock input[type=color]::-webkit-color-swatch-wrapper{padding:0}',
@@ -305,22 +351,15 @@
 		colorRow.value.appendChild(input);
 		return input;
 	});
-	colorRow.value.appendChild(button('随机', '随机三种颜色，只改这一扇', () => {
+	colorRow.value.appendChild(button('随机', '随机三种颜色，两扇一起换', () => {
 		const hexes = [0, 1, 2].map(() => Math.floor(Math.random() * 0x1000000).toString(16).padStart(6, '0'));
 		swatches.forEach((input, i) => { input.value = '#' + hexes[i]; });
-		writeColors(hexes);
+		writeColors(hexes, ['colors0', 'colors1']);
+		publishColors(hexes);
 	}));
-	colorRow.value.appendChild(button('还原', '回到当前编号在配色表里的三种颜色', () => {
-		const query = readQuery();
-		query.delete('colors');
-		history.replaceState(null, '', location.pathname + '?' + query.toString());
-		colorOverride = null;
-		const hexes = fileHexes();
-		if (hexes) {
-			paletteMats.forEach((material) => paint(material, hexes));
-			document.body.style.background = '#' + hexes[0];
-		}
-		showFileColors();
+	colorRow.value.appendChild(button('还原', '两扇都回到当前编号的配色', () => {
+		restoreColors();
+		localStorage.setItem(COLOR_KEY, JSON.stringify({ restore: true, nonce: Date.now() }));
 	}));
 	dock.appendChild(colorRow.line);
 
@@ -368,6 +407,144 @@
 	qualityRow.value.append(qualityInput, qualityLabel);
 	dock.appendChild(qualityRow.line);
 
+	const POS_KEY = 'entangled-dock-anchor';
+	const OPEN_KEY = 'entangled-dock-open';
+	const panel = document.createElement('div');
+	panel.className = 'panel';
+	while (dock.firstChild) panel.appendChild(dock.firstChild);
+	const grip = document.createElement('div');
+	grip.className = 'grip';
+	grip.title = '拖动面板';
+	grip.innerHTML = '<svg viewBox="0 0 16 16" width="14" height="14" aria-hidden="true"><path fill="currentColor" d="M2 3h2v2H2zm5 0h2v2H7zm5 0h2v2h-2zM2 7h2v2H2zm5 0h2v2H7zm5 0h2v2h-2zM2 11h2v2H2zm5 0h2v2H7zm5 0h2v2h-2z"/></svg>';
+	let anchor = null;
+	let pinRight = false;
+	let pinBottom = false;
+	function clampBox (x, y, w, h) {
+		const maxX = Math.max(8, window.innerWidth - w - 8);
+		const maxY = Math.max(8, window.innerHeight - h - 8);
+		return {
+			x: Math.round(Math.min(maxX, Math.max(8, x))),
+			y: Math.round(Math.min(maxY, Math.max(8, y)))
+		};
+	}
+	function applyBox (x, y) {
+		dock.style.left = x + 'px';
+		dock.style.top = y + 'px';
+		dock.style.bottom = 'auto';
+	}
+	function syncPin () {
+		pinRight = anchor.x + 18 > window.innerWidth / 2;
+		pinBottom = anchor.y + 18 > window.innerHeight / 2;
+	}
+	function layoutFromAnchor () {
+		if (!anchor) return;
+		if (!dock.classList.contains('open')) {
+			const box = clampBox(anchor.x, anchor.y, 36, 36);
+			anchor = box;
+			applyBox(box.x, box.y);
+			return;
+		}
+		const w = dock.offsetWidth || 248;
+		const h = dock.offsetHeight || 36;
+		const box = clampBox(
+			pinRight ? anchor.x + 36 - w : anchor.x,
+			pinBottom ? anchor.y + 36 - h : anchor.y,
+			w,
+			h
+		);
+		applyBox(box.x, box.y);
+	}
+	function rememberAnchor () {
+		sessionStorage.setItem(POS_KEY, JSON.stringify(anchor));
+	}
+	function setOpen (open) {
+		if (!anchor) {
+			const rect = dock.getBoundingClientRect();
+			anchor = { x: rect.left, y: rect.top };
+		}
+		if (open) syncPin();
+		dock.classList.toggle('open', open);
+		fab.setAttribute('aria-expanded', open ? 'true' : 'false');
+		sessionStorage.setItem(OPEN_KEY, open ? '1' : '0');
+		layoutFromAnchor();
+	}
+	const collapse = button('', '收起', () => setOpen(false));
+	collapse.className = 'icon';
+	collapse.setAttribute('aria-label', '收起');
+	collapse.innerHTML = '<svg viewBox="0 0 16 16" width="12" height="12" aria-hidden="true"><path fill="currentColor" d="M3 7h10v2H3z"/></svg>';
+	grip.appendChild(collapse);
+	panel.insertBefore(grip, panel.firstChild);
+	const fab = document.createElement('button');
+	fab.type = 'button';
+	fab.className = 'fab';
+	fab.title = '拖动，或点击展开';
+	fab.setAttribute('aria-label', '打开控制面板');
+	fab.setAttribute('aria-expanded', 'false');
+	fab.innerHTML = '<svg viewBox="0 0 16 16" width="14" height="14" aria-hidden="true"><path fill="currentColor" d="M2 3.2h12V4.6H2zm0 4h12v1.4H2zm0 4h12V13H2z"/></svg>';
+	dock.append(fab, panel);
+	function bindDrag (handle, onTap) {
+		let originX = 0;
+		let originY = 0;
+		let startX = 0;
+		let startY = 0;
+		let moved = false;
+		let active = false;
+		handle.addEventListener('pointerdown', (event) => {
+			if (event.button !== 0) return;
+			const pressed = event.target.closest('button');
+			if (pressed && pressed !== handle) return;
+			active = true;
+			moved = false;
+			const rect = dock.getBoundingClientRect();
+			originX = rect.left;
+			originY = rect.top;
+			startX = event.clientX;
+			startY = event.clientY;
+			try { handle.setPointerCapture(event.pointerId); } catch (e) {}
+		});
+		handle.addEventListener('pointermove', (event) => {
+			if (!active) return;
+			const dx = event.clientX - startX;
+			const dy = event.clientY - startY;
+			if (Math.abs(dx) > 3 || Math.abs(dy) > 3) moved = true;
+			if (moved) {
+				const w = dock.offsetWidth || 36;
+				const h = dock.offsetHeight || 36;
+				const box = clampBox(originX + dx, originY + dy, w, h);
+				applyBox(box.x, box.y);
+			}
+		});
+		function end () {
+			if (!active) return;
+			active = false;
+			if (!moved) {
+				if (onTap) onTap();
+				return;
+			}
+			const rect = dock.getBoundingClientRect();
+			if (dock.classList.contains('open')) {
+				const box = clampBox(rect.left, rect.top, rect.width, rect.height);
+				applyBox(box.x, box.y);
+				anchor = clampBox(
+					pinRight ? box.x + rect.width - 36 : box.x,
+					pinBottom ? box.y + rect.height - 36 : box.y,
+					36,
+					36
+				);
+			} else {
+				anchor = clampBox(rect.left, rect.top, 36, 36);
+				applyBox(anchor.x, anchor.y);
+				syncPin();
+			}
+			rememberAnchor();
+		}
+		handle.addEventListener('pointerup', end);
+		handle.addEventListener('pointercancel', end);
+	}
+	bindDrag(fab, () => setOpen(true));
+	bindDrag(grip, null);
+	fab.addEventListener('click', (event) => event.preventDefault());
+
 	let frames = 0;
 	let last = performance.now();
 	(function tick (now) {
@@ -393,6 +570,12 @@
 
 	let followTimer = 0;
 	window.addEventListener('storage', (event) => {
+		if (event.key === COLOR_KEY && event.newValue) {
+			let colors = null;
+			try { colors = JSON.parse(event.newValue); } catch (e) { return; }
+			adoptColors(colors);
+			return;
+		}
 		if (event.key !== SHARED_KEY || !event.newValue) return;
 		let rec = null;
 		try { rec = JSON.parse(event.newValue); } catch (e) { return; }
@@ -402,6 +585,20 @@
 
 	window.addEventListener('DOMContentLoaded', () => {
 		document.body.append(fps, dock);
+		try {
+			const saved = JSON.parse(sessionStorage.getItem(POS_KEY) || 'null');
+			if (saved && Number.isFinite(saved.x) && Number.isFinite(saved.y)) anchor = { x: saved.x, y: saved.y };
+		} catch (e) {}
+		if (!anchor) {
+			const rect = dock.getBoundingClientRect();
+			anchor = { x: rect.left, y: rect.top };
+		}
+		syncPin();
+		if (sessionStorage.getItem(OPEN_KEY) === '1') {
+			dock.classList.add('open');
+			fab.setAttribute('aria-expanded', 'true');
+		}
+		layoutFromAnchor();
 		const rec = readShared();
 		if (rec && Date.now() - rec.nonce < 20000) adoptShared(rec);
 	});
