@@ -224,7 +224,7 @@
 	if (savedColors.length === 3 && savedColors.every((hex) => /^[0-9a-fA-F]{6}$/.test(hex))) {
 		colorOverride = savedColors.map((hex) => hex.toLowerCase());
 	}
-	fetch('/src/palettes.json').then((response) => response.json()).then((paletteFile) => {
+	fetch('src/palettes.json').then((response) => response.json()).then((paletteFile) => {
 		palettes = paletteFile;
 		if (colorOverride) {
 			swatches.forEach((input, i) => { input.value = '#' + colorOverride[i]; });
