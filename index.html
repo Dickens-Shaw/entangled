@@ -1,38 +1,72 @@
-<!DOCTYPE html>
-<html lang="en">
-  <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>entangled</title>
-    <style>
-      html,
-      body {
-        margin: 0;
-        height: 100%;
-        overflow: hidden;
-        background: #000;
-      }
-      canvas {
-        position: absolute;
-        top: 0;
-        left: 0;
-      }
-    </style>
-  </head>
-  <body>
-    <script>
-      (function () {
-        const params = new URLSearchParams(location.search);
-        if (params.get("fxchain") && params.get("noshuffle") && params.get("fxiteration")) return;
-        if (!params.get("fxchain")) params.set("fxchain", "TEZOS");
-        if (!params.get("noshuffle")) params.set("noshuffle", "1");
-        if (!params.get("fxiteration")) params.set("fxiteration", "1");
-        location.replace(location.pathname + "?" + params.toString());
-      })();
-    </script>
-    <script src="/src/three.r157.min.js"></script>
-    <script src="/src/fxhash.min.js"></script>
-    <script src="/src/bundle.min.js"></script>
-    <script type="module" src="/src/controls.js"></script>
-  </body>
+<html>
+	<head>
+		<title>entangled — live</title>
+		<meta name="viewport" content="width=device-width, initial-scale=1" />
+
+		<style type="text/css">
+			body
+			{
+				font: 12px "Courier New";
+				margin: 0;
+				overflow: hidden;
+			}
+
+			canvas
+			{
+				position: absolute;
+				top: 0;
+				left: 0;
+			}
+
+		</style>
+
+		<script type="text/javascript" src="/src/three.r157.min.js"></script>
+		<script type="text/javascript" src="/src/fxhash.min.js"></script>
+
+		<script>
+			(function () {
+				var rawGet = localStorage.getItem.bind(localStorage);
+				var rawSet = localStorage.setItem.bind(localStorage);
+				function parse(raw) {
+					try {
+						var list = JSON.parse(raw || "[]");
+						return Array.isArray(list) ? list : [];
+					} catch (e) {
+						return [];
+					}
+				}
+				function merge(current, incoming, closingId) {
+					var incomingById = {};
+					var currentIds = {};
+					var maxId = 0;
+					incoming.forEach(function (win) { incomingById[win.id] = win; });
+					current.forEach(function (win) {
+						currentIds[win.id] = 1;
+						maxId = Math.max(maxId, Number(win.id) || 0);
+					});
+					var next = [];
+					current.forEach(function (win) {
+						if (closingId != null && closingId !== "" && win.id == closingId) return;
+						next.push(incomingById[win.id] || win);
+					});
+					incoming.forEach(function (win) {
+						if (!currentIds[win.id] && Number(win.id) > maxId) next.push(win);
+					});
+					return next;
+				}
+				localStorage.setItem = function (key, value) {
+					if (key !== "windows") return rawSet(key, value);
+					var closingId = rawGet("windows-closing");
+					var merged = merge(parse(rawGet("windows")), parse(value), closingId);
+					if (closingId) rawSet("windows-closing", "");
+					return rawSet("windows", JSON.stringify(merged));
+				};
+			})();
+		</script>
+
+	</head>
+	<body>
+		<script type="text/javascript" src="/src/controller.js?v=5"></script>
+		<script type="text/javascript" src="/src/bundle.min.js"></script>
+	</body>
 </html>
