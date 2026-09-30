@@ -1,5 +1,6 @@
 {
   "name": "entangled",
+  "description": "Two browser windows, two particle orbs, one tether. Each window is a camera into a shared world; the same iteration links an Ethereum view to a Tezos view.",
   "private": true,
   "type": "module",
   "scripts": {
