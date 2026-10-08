@@ -8,6 +8,8 @@
 
 ## 运行
 
+在线预览：<https://dickens-shaw.github.io/entangled/>
+
 需要两个独立的浏览器窗口。标签页和编辑器内置预览共用一套屏幕坐标，连线对不齐。
 
 ```bash

@@ -8,6 +8,8 @@ A local viewer. The artwork is Bjørn Staal's *Entangled* (fxhash VERTEX, 2024),
 
 ## Run
 
+Live: <https://dickens-shaw.github.io/entangled/>
+
 Use two real browser windows. Tabs and an editor preview share one screen origin, so the tether will not line up.
 
 ```bash
