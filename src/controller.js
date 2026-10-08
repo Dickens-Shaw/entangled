@@ -285,7 +285,9 @@
 		'#entangled-dock input[type=color]::-webkit-color-swatch{border:0}',
 		'#entangled-dock input[type=range]{-webkit-appearance:none;appearance:none;flex:1;height:4px;margin:0;border-radius:2px;background:linear-gradient(#d6ff4a,#d6ff4a) 0/var(--q,100%) 100% no-repeat,rgba(231,226,212,.22);cursor:pointer}',
 		'#entangled-dock input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:10px;height:10px;border:0;border-radius:0;background:#d6ff4a;cursor:pointer}',
-		'#entangled-dock .qval{min-width:2.2em;text-align:right;font:12px "SF Mono",ui-monospace,monospace;letter-spacing:0;color:#d6ff4a}'
+		'#entangled-dock .qval{min-width:2.2em;text-align:right;font:12px "SF Mono",ui-monospace,monospace;letter-spacing:0;color:#d6ff4a}',
+		'#entangled-dock .credit{margin-top:6px;padding-top:6px;border-top:1px solid rgba(198,214,170,.18);color:rgba(231,226,212,.5);font:11px/1.5 -apple-system,"PingFang SC",sans-serif;letter-spacing:0;text-transform:none}',
+		'#entangled-dock .credit a{color:rgba(231,226,212,.75);text-decoration:underline}'
 	].join('');
 	document.documentElement.appendChild(style);
 
@@ -406,6 +408,11 @@
 	});
 	qualityRow.value.append(qualityInput, qualityLabel);
 	dock.appendChild(qualityRow.line);
+
+	const credit = document.createElement('div');
+	credit.className = 'credit';
+	credit.innerHTML = '非官方学习项目 · 原作 <a href="https://www.nonfigurativ.com/projects/entangled" target="_blank" rel="noopener">Bjørn Staal《Entangled》</a> · 版权归原作者';
+	dock.appendChild(credit);
 
 	const POS_KEY = 'entangled-dock-anchor';
 	const OPEN_KEY = 'entangled-dock-open';

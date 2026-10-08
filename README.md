@@ -4,6 +4,8 @@
 
 Two browser windows, two particle orbs, one tether. Each window is a camera into a shared world; the same iteration links an Ethereum view to a Tezos view.
 
+> Unofficial, non-commercial study project. Not affiliated with or endorsed by Bjørn Staal. All rights in the artwork stay with him; this repo claims none. If he asks, the live preview and the artwork files come down.
+
 A local viewer. The artwork is Bjørn Staal's *Entangled* (fxhash VERTEX, 2024), recovered from the on-chain filesystem via [fire17/entangled-grail](https://github.com/fire17/entangled-grail). `src/bundle.min.js` and `src/fxhash.min.js` are unchanged. This repo changes the control panel and how the page is served. Rights are in [NOTICE.md](NOTICE.md).
 
 ## Run

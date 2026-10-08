@@ -4,6 +4,8 @@
 
 两扇浏览器窗口，两团粒子，一根连线。每个窗口是同一套世界里的一个镜头；同一个编号把 Ethereum 的视角和 Tezos 的视角接在一起。
 
+> 非官方、非商业的学习项目，与 Bjørn Staal 本人无关，也未获其认可。作品版权归原作者，本仓库不主张任何权利。原作者要求下架时，在线预览和作品文件会一并移除。
+
 本地查看器。作品代码来自 Bjørn Staal 的 *Entangled*（fxhash VERTEX，2024），经 [fire17/entangled-grail](https://github.com/fire17/entangled-grail) 从链上文件系统取出。`src/bundle.min.js` 与 `src/fxhash.min.js` 保持原样。这里改的是控制面板和本地启动方式。权利说明见 [NOTICE.md](NOTICE.md)。
 
 ## 运行
